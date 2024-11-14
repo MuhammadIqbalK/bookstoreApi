@@ -20,7 +20,7 @@ class Book(models.Model):
 #MODEL UNTUK TABEL CUSTOMER(2)
 class Customer(models.Model):
    name = models.CharField(max_length=50)
-   phone = models.IntegerField(max_length=12)
+   phone = models.IntegerField
    email = models.EmailField(max_length=100)
 
 # set nama tabel
