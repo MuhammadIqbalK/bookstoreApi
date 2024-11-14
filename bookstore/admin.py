@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Book
+from .models import Customer
 from django.utils import timezone
 
 
@@ -19,4 +20,15 @@ def save_model(obj):
 
 #MENDAFTARKAN BookAdmin KE HALAMAN ADMIN
 admin.site.register(Book, BookAdmin)
+
+
+
+class CustomerAdmin(admin.ModelAdmin):
+   #MENAMPILKAN SEMUA KOLOM Customer
+   list_display = ('name', 'phone', 'email')
+   #MENAMBAHKAN FITUR PENCARIAN BERDASARKAN 'NAME' DAN 'EMAIL'
+   search_fields = ['name', 'email']
+
+#MENDAFTARKAN CustomerAdmin KE HALAMAN ADMIN
+admin.site.register(Customer, CustomerAdmin)
 
