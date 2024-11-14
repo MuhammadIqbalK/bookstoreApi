@@ -5,7 +5,7 @@ class Book(models.Model):
    title = models.CharField(max_length=50)
    author = models.CharField(max_length=50)
    price = models.DecimalField(max_digits=10, decimal_places=2)
-   stock = models.IntegerField
+   stock = models.IntegerField()
    created_at = models.DateTimeField(auto_now_add=True)
    updated_at = models.DateTimeField(auto_now=True)
 
@@ -20,7 +20,7 @@ class Book(models.Model):
 #MODEL UNTUK TABEL CUSTOMER(2)
 class Customer(models.Model):
    name = models.CharField(max_length=50)
-   phone = models.IntegerField
+   phone = models.IntegerField()
    email = models.EmailField(max_length=100)
 
 # set nama tabel
@@ -37,7 +37,7 @@ class Transaction(models.Model):
    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
    
 #SET RELASI KE TABEL CUSTOMER
-   customer_id = models.ForeignKey(Customer, on_delete=models.CASCADE)
+   customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
    
 # set nama tabel
    class Meta:
@@ -49,12 +49,12 @@ class Transaction(models.Model):
 
 #MODEL UNTUK TABEL TRANSACTION_ITEM(4)
 class TransactionItem(models.Model):
-   quantity = models.IntegerField
+   quantity = models.IntegerField()
    price_total = models.DecimalField(max_digits=10, decimal_places=2)
    
 #SET RELASI KE TABEL TRANSACTION & BUKU
-   transaction_id = models.ForeignKey(Transaction, on_delete=models.CASCADE)
-   book_id = models.ForeignKey(Book, on_delete=models.CASCADE)   
+   transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+   book = models.ForeignKey(Book, on_delete=models.CASCADE)   
    
 # set nama tabel
    class Meta:
