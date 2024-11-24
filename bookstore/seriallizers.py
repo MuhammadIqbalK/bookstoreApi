@@ -5,17 +5,12 @@ from rest_framework.serializers import ModelSerializer
 from .models import Book
 
 
-# Membuat class serializers untuk API endpoint "Get list all book"
-class BookListSerializer(ModelSerializer):
+# Membuat class serializers untuk semua API endpoint "book"
+class BookSerializer(ModelSerializer):
    class Meta:
       model = Book
       fields = ('id', 'title', 'author', 'price', 'stock')
 
-# Membuat class serializers untuk API endpoint "Get detail book"
-class BookDetailSerializer(ModelSerializer):
-   class Meta:
-      model = Book
-      fields = ('id', 'title', 'author', 'price', 'stock')
 
 
  
