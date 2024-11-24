@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.http import Http404
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework import generics 
 
 # import Book model dan class seriallizers untuk modul Book
 from .models import Book
@@ -13,8 +13,8 @@ from .seriallizers import BookListSerializer, BookDetailSerializer
 
 
 # Membuat View untuk API endpoint "Get All Books"
-# /api/book
-class BookListView(ListAPIView):
+# GET:/api/book
+class BookListView(generics.ListAPIView):
    # Mengset class serializer
    serializer_class = BookListSerializer
    queryset = Book.objects.all()
@@ -35,9 +35,22 @@ class BookListView(ListAPIView):
    
    
 # Membuat View untuk API endpoint "Get Detail of Book"
-# /api/book/:id
-class BookDetailView(RetrieveAPIView):
+# View ini digunakan untuk get book by id,(update) put & patch book, dan delete book 
+# GET:/api/book/:id
+# PUT:/api/book/:id
+# PATCH:/api/book/:id
+# DELETE:/api/book/:id
+class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
    # Mengset class serializer
    serializer_class = BookDetailSerializer
    queryset = Book.objects.all()
+   
+   
+# Membuat View untuk API endpoint "Create book"
+# POST:/api/book
+class BookCreateView(generics.CreateAPIView):
+   serializer_class = BookListSerializer
+   queryset = Book.objects.all()
+
+
 

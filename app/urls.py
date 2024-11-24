@@ -21,5 +21,5 @@ urlpatterns = [
     #routing untuk dashboard admin
     path('admin/', admin.site.urls),
     #routing untuk Rest API
-    path('api/',include('bookstore.urls'))
+    path('api/v1/',include('bookstore.urls'))
 ]
