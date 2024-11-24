@@ -1,6 +1,28 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser  # Menggunakan User model default
 
-#MODEL UNTUK TABEL BUKU(1)
+#MODEL UNTUK TABEL User(1)
+class User(AbstractUser):
+    phone_number = models.CharField(max_length=12, blank=True, null=True)
+    birth_date = models.DateField(null=True, blank=True)
+    
+     # Override related_name to avoid conflicts
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='custom_user_set',  # Custom related name to avoid clash
+        blank=True,
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='custom_user_permissions_set',  # Custom related name to avoid clash
+        blank=True,
+    )
+    
+    def __str__(self):
+        return self.username
+
+
+#MODEL UNTUK TABEL BUKU(2)
 class Book(models.Model):
    title = models.CharField(max_length=50)
    author = models.CharField(max_length=50)
@@ -15,21 +37,7 @@ class Book(models.Model):
       
    def __str__(self):
       return self.title
-
-
-#MODEL UNTUK TABEL CUSTOMER(2)
-class Customer(models.Model):
-   name = models.CharField(max_length=50)
-   phone = models.IntegerField()
-   email = models.EmailField(max_length=100)
-
-# set nama tabel
-   class Meta:
-      db_table = 'customers'
-      
-   def __str__(self):
-      return self.name
-
+   
    
 #MODEL UNTUK TABEL TRANSAKSI(3)
 class Transaction(models.Model):
@@ -37,14 +45,14 @@ class Transaction(models.Model):
    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
    
 #SET RELASI KE TABEL CUSTOMER
-   customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+   user = models.ForeignKey(User, on_delete=models.CASCADE)
    
 # set nama tabel
    class Meta:
       db_table = 'transactions'
       
    def __str__(self):
-      return f"Transaction on {self.transaction_date} for {self.total_amount} (Customer: {self.customer_id.name})"
+      return f"Transaction on {self.transaction_date} for {self.total_amount} (Customer: {self.user_id.username})"
    
 
 #MODEL UNTUK TABEL TRANSACTION_ITEM(4)
