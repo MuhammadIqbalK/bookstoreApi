@@ -9,8 +9,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics 
 
 # import Book model dan class seriallizers untuk modul Book
-from .models import Book
-from .seriallizers import BookSerializer
+from .models import Book, Transaction
+from .seriallizers import BookSerializer, TransactionSerializer, TransactionDetailSerializer
 
 
 
@@ -136,5 +136,50 @@ class BookCreateView(generics.CreateAPIView):
         "error": "Invalid data",
         "detail": serializer.errors
      }, status=status.HTTP_400_BAD_REQUEST)
+     
+
+# Membuat View untuk API endpoint "Create Transaction"
+# POST:/api/transactions
+class TransactionCreateView(generics.CreateAPIView):
+   serializer_class = TransactionSerializer
+   queryset = Transaction.objects.all()
+
+   def create(self, request, *args, **kwargs):
+         serializer = self.get_serializer(data=request.data)
+         serializer.is_valid(raise_exception=True)
+         transaction = serializer.save()  # Memanggil `create` di serializer
+         
+         # Buat pesan respons di sini
+         return Response({
+               "message": "Transaction successfully created",
+               "data": TransactionSerializer(transaction).data
+         }, status=status.HTTP_201_CREATED)
+   
+         
+# Membuat View untuk API endpoint "Get Transaction" 
+# GET:/api/transactions/:id
+class TransactionDetailView(generics.RetrieveAPIView):
+   serializer_class = TransactionDetailSerializer
+   queryset = Transaction.objects.all()
+   
+    # Menambahkan Response
+   def get_object(self):
+      # Ambil primary key dari URL
+      pk = self.kwargs.get('pk')
+      
+      # Cek apakah objek ada di database
+      try:
+         transaction = Transaction.objects.get(pk=pk)
+         return transaction
+      except Transaction.DoesNotExist:
+         # Jika objek tidak ditemukan, kita lempar exception dengan pesan kustom
+         raise NotFound("Transaction with the given ID was not found.")
+      
+   def get(self, request, *args, **kwargs):
+      transaction = self.get_object()
+      return Response({
+         "message": "Transaction details retrieved successfully",
+         "data": TransactionSerializer(transaction).data
+         })
 
 

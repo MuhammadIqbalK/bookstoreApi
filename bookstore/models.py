@@ -53,7 +53,12 @@ class Transaction(models.Model):
       
    def __str__(self):
       return f"Transaction on {self.transaction_date} for {self.total_amount} (Customer: {self.user_id.username})"
-   
+ 
+# mengambil relasi ke TransactionItem untuk field items di serializer 
+   @property
+   def items(self):
+      return self.transactionitem_set.all() 
+
 
 #MODEL UNTUK TABEL TRANSACTION_ITEM(4)
 class TransactionItem(models.Model):
