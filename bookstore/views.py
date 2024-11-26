@@ -6,21 +6,75 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics 
+from rest_framework import generics
+from rest_framework.views import APIView
+# import class untuk autentikasi jwt
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.views import TokenObtainPairView
+# import model dan class seriallizers untuk semua modul
+from .models import Book, Transaction, User
+from .seriallizers import (BookSerializer, TransactionSerializer, TransactionDetailSerializer, 
+                           MyTokenObtainPairSerializer, RegisterSerializer, LogoutSerializer)
+from rest_framework.permissions import AllowAny
 
-# import Book model dan class seriallizers untuk modul Book
-from .models import Book, Transaction
-from .seriallizers import BookSerializer, TransactionSerializer, TransactionDetailSerializer
+
+
+
+# Membuat view untuk API endpoint "Register"
+# POST:/api/register/
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
+
+
+
+# Membuat View untuk memodifikasi ObtainTokenPairView menjadi API endpoint "Login"
+# POST:/api/login/
+class CustomLoginView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        response.data['message'] = 'Login successful!'
+        return response
+
+
+    
+# Membuat View untuk API endpoint "Logout" dan memblacklist token
+# POST:/api/logout/
+class LogoutView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+  
+     
+     
+# Membuat View untuk API endpoint "Logout/all" dan memblacklist semua token pengguna yang terkait
+# POST:/api/logout/all
+class LogoutAllSessionsView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        tokens = OutstandingToken.objects.filter(user_id=request.user.id)
+        for token in tokens:
+            t, _ = BlacklistedToken.objects.get_or_create(token=token)
+
+        return Response({"message": "Successfully logged out from all sessions"}, status=status.HTTP_205_RESET_CONTENT)
 
 
 
 # Membuat View untuk API endpoint "Get All Books"
-# GET:/api/book
+# GET:/api/book/all
 class BookListView(generics.ListAPIView):
    # Mengset class serializer
    serializer_class = BookSerializer
    queryset = Book.objects.all()
-   
+   # mengset autentikasi
+   permission_classes = [IsAuthenticated]
+
    # Menambahkan  Fitur filtering, Searching dan ordering
    filter_backends = (
       DjangoFilterBackend,
@@ -118,7 +172,7 @@ class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
    
    
 # Membuat View untuk API endpoint "Create book"
-# POST:/api/book
+# POST:/api/book/
 class BookCreateView(generics.CreateAPIView):
    serializer_class = BookSerializer
    queryset = Book.objects.all()
@@ -139,7 +193,7 @@ class BookCreateView(generics.CreateAPIView):
      
 
 # Membuat View untuk API endpoint "Create Transaction"
-# POST:/api/transactions
+# POST:/api/transactions/
 class TransactionCreateView(generics.CreateAPIView):
    serializer_class = TransactionSerializer
    queryset = Transaction.objects.all()
@@ -155,6 +209,7 @@ class TransactionCreateView(generics.CreateAPIView):
                "data": TransactionSerializer(transaction).data
          }, status=status.HTTP_201_CREATED)
    
+ 
          
 # Membuat View untuk API endpoint "Get Transaction" 
 # GET:/api/transactions/:id
@@ -180,6 +235,6 @@ class TransactionDetailView(generics.RetrieveAPIView):
       return Response({
          "message": "Transaction details retrieved successfully",
          "data": TransactionSerializer(transaction).data
-         })
+         },status=status.HTTP_200_OK)
 
 
