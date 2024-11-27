@@ -5,6 +5,7 @@ from django.contrib.auth.models import AbstractUser  # Menggunakan User model de
 class User(AbstractUser):
     phone_number = models.CharField(max_length=12, blank=True, null=True)
     birth_date = models.DateField(null=True, blank=True)
+    logout_at = models.DateTimeField(null=True, blank=True)
     
      # Override related_name to avoid conflicts
     groups = models.ManyToManyField(

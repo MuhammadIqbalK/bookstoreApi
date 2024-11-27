@@ -151,37 +151,20 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_FILTER_BACKENDS':['django_filters.rest_framework.DjangoFilterBackend'],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'bookstore.authentication.CustomJWTAuthentication',
     ],
 }
 
 SIMPLE_JWT = {
-    # Masa hidup access token
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5), 
-    # Masa hidup refresh token 
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),   
-    # Jika True, token refresh akan diperbarui setiap kali digunakan 
-    'ROTATE_REFRESH_TOKENS': True,
-    # Jika True, token refresh lama akan dimasukkan ke blacklist                 
-    'BLACKLIST_AFTER_ROTATION': True,
-    # Update field last_login saat login berhasil  
-    'UPDATE_LAST_LOGIN': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    # Header untuk mengirim token
-    'AUTH_HEADER_TYPES': ('Bearer',),  
-    # Field user ID di model User            
-    'USER_ID_FIELD': 'id',  
-     # Field yang digunakan dalam token payload                       
-    'USER_ID_CLAIM': 'user_id',                   
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-     # Mengidentifikasi token secara unik
-    'JTI_CLAIM': 'jti',                           
-    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
-    # Callback untuk menambahkan custom claims
-    'ADD_CLAIMS_CALLBACK': None,                   
-    'TOKEN_OBTAIN_SERIALIZER': 'rest_framework_simplejwt.serializers.TokenObtainPairSerializer',
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=3),  # Masa berlaku access token (default 5 menit)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Masa berlaku refresh token (default 7 hari)
+    'ROTATE_REFRESH_TOKENS': True,                   # Set False jika tidak ingin refresh token diperbarui
+    'BLACKLIST_AFTER_ROTATION': True,                 # Set True untuk mem-blacklist refresh token yang sudah diganti
+    'UPDATE_LAST_LOGIN': False,                       # Set True jika ingin memperbarui last login saat login berhasil
+    'ALGORITHM': 'HS256',                             # Algoritma yang digunakan untuk menandatangani token (default: HS256)
+    'SIGNING_KEY': SECRET_KEY,                        # Kunci untuk menandatangani JWT, pastikan ini cukup kuat
+    'VERIFYING_KEY': None,                            # Verifikasi kunci publik (misalnya jika kamu menggunakan RS256)
+    'AUTH_HEADER_TYPES': ('Bearer',),                 # Tipe header untuk autentikasi JWT
+    'USER_ID_FIELD': 'id',                            # ID field yang digunakan untuk mengambil informasi pengguna
+    'USER_ID_CLAIM': 'user_id',                      # Klaim yang akan digunakan untuk menampilkan ID pengguna
 }
