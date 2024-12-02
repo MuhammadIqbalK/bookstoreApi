@@ -42,11 +42,10 @@ class LogoutSerializer(serializers.Serializer):
         except Exception as e:
             raise serializers.ValidationError(f"Invalid refresh token: {str(e)}")
         return attrs     
-     
-     
+         
 
 # Membuat class serializer untuk API endpoint "Register"
-class RegisterSerializer(serializers.ModelSerializer):
+class RegisterSerializer(ModelSerializer):
     email = serializers.EmailField(
             required=True,
             validators=[UniqueValidator(queryset=User.objects.all())]
@@ -84,6 +83,77 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+# Membuat Class Serializers Untuk Api endpoint change-password
+class ChangePasswordSerializer(ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
+    old_password = serializers.CharField(write_only=True, required=True)
+    
+    class Meta:
+        model = User
+        fields = ('password', 'password2','old_password')
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+                                              
+        return attrs
+    
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        
+        if not user.check_password(value):
+            raise serializers.ValidationError({"old_password": "Old password is not correct"})
+        return value
+    
+    def update(self, instance, validated_data):
+        
+        instance.set_password(validated_data['password'])
+        instance.save()
+
+        return instance
+    
+
+# Membuat Class Serializer untuk Api endpoint "user update"
+class UserSerializer(ModelSerializer):
+    email = serializers.EmailField(required=False)  # Jadikan opsional
+    username = serializers.CharField(required=False)  # Jadikan opsional
+
+    class Meta:
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'email', 'phone_number', 'birth_date')
+
+    def validate_email(self, value):
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError({"email": "This email is already in use."})
+        return value
+
+    def validate_username(self, value):
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(username=value).exists():
+            raise serializers.ValidationError({"username": "This username is already in use."})
+        return value
+
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+
+        if user.pk != instance.pk:
+            raise serializers.ValidationError({"authorize": "You dont have permission for this user."})
+        
+        # Update only the fields present in validated_data
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.username = validated_data.get('username', instance.username)
+        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
+        instance.birth_date = validated_data.get('birth_date', instance.birth_date)
+
+        instance.save()
+        return instance
+
+
+    
 # Membuat class serializers untuk semua API endpoint "book"
 class BookSerializer(ModelSerializer):
    class Meta:
@@ -98,7 +168,6 @@ class TransactionItemSerializer(ModelSerializer):
       fields = ['book', 'quantity', 'price_total']
       # jika read_only_fields artinya tidak akan keluar di body request
       read_only_fields = ['price_total'] 
- 
  
 # Membuat class Serializers untuk Api endpoint "get:/Transaction/:id"   
 class TransactionDetailSerializer(ModelSerializer):

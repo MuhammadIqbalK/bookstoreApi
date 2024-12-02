@@ -2,7 +2,8 @@ from django.urls import path
 
 # import semua class View modul Book
 from .views import (BookListView, BookDetailView, BookCreateView, TransactionCreateView, TransactionDetailView, 
-                    CustomLoginView, RegisterView, LogoutView, CustomTokenRefreshView)
+                    CustomLoginView, RegisterView, LogoutView, CustomTokenRefreshView, ChangePasswordView, 
+                    UpdateUserView, GetUserByIdView)
 
 
 urlpatterns = [
@@ -18,5 +19,10 @@ urlpatterns = [
      path('login/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
      path('logout/', LogoutView.as_view(), name='api-logout'),
      path('register/', RegisterView.as_view(), name='api-register'),
+     path('users/<int:pk>/change-password/', ChangePasswordView.as_view(), name='api-change-user-password'),
+     path('users/<int:pk>/update/', UpdateUserView.as_view(), name='api-user-update'),
+     path('users/<int:pk>', GetUserByIdView.as_view(), name='api-user-detail'),
+     
+     
 
 ]

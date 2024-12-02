@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.shortcuts import render
 
 # import class yang dibutuhkan untuk membuat view
@@ -16,7 +17,8 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 # import model dan class seriallizers untuk semua modul
 from .models import Book, Transaction, User
 from .seriallizers import (BookSerializer, TransactionSerializer, TransactionDetailSerializer, 
-                           MyTokenObtainPairSerializer, RegisterSerializer)
+                           MyTokenObtainPairSerializer, RegisterSerializer, ChangePasswordSerializer,
+                           UserSerializer)
 from rest_framework.permissions import AllowAny
 
 
@@ -65,9 +67,88 @@ class LogoutView(APIView):
         user.save()
 
         return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+     
+     
+# Membuat View untuk API endpoint "Change passsword"
+# PUT:/api/users/:id /change_password/    
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
 
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        # Save the new password
+        serializer.update(user, serializer.validated_data)
+
+        # Optional: Update logout_at to force re-login
+        user.logout_at = datetime.now()
+        user.save()
+
+        return Response(
+            {"message": "Password updated successfully. Please login again."},
+            status=status.HTTP_200_OK
+        )
+     
+      
+ # Membuat View untuk API endpoint "Update User"
+ # PATCH:/api/users/:id/update/   
+class UpdateUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the authenticated user is trying to update their own profile
+        if request.user.pk != user.pk:
+            return Response(
+                {"authorize": "You don't have permission to update this user."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Create the serializer with context including request
+        serializer = UserSerializer(user, data=request.data, partial=True, context={'request': request})
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Data successfully updated",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+     
+     
+ # Membuat View untuk API endpoint "Update User"
+ # GET:/api/users/:id  
+class GetUserByIdView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Pastikan pengguna hanya bisa mengakses profil mereka sendiri atau admin
+        if request.user.pk != user.pk and not request.user.is_staff:
+            return Response(
+                {"error": "You don't have permission to view this user's profile."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = UserSerializer(user)
+        return Response({
+           "message": "User details retrieved successfully",
+           "data": serializer.data}, status=status.HTTP_200_OK)
+
+     
 # Membuat View untuk API endpoint "Get All Books"
 # GET:/api/book/all
 class BookListView(generics.ListAPIView):
