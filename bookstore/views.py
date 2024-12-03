@@ -14,6 +14,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken
+
+from .filters import TransactionFilter
 # import model dan class seriallizers untuk semua modul
 from .models import Book, Transaction, User
 from .seriallizers import (BookSerializer, TransactionSerializer, TransactionDetailSerializer, 
@@ -40,7 +42,7 @@ class CustomLoginView(TokenObtainPairView):
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        response.data['message'] = 'Login successful!'
+        response.data['message'] = 'Login successful!.'
         return response
 
 
@@ -66,7 +68,7 @@ class LogoutView(APIView):
         user.logout_at = timezone.now()
         user.save()
 
-        return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+        return Response({"message": "Logout successful."}, status=status.HTTP_200_OK)
      
      
 # Membuat View untuk API endpoint "Change passsword"
@@ -118,7 +120,7 @@ class UpdateUserView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({
-                "message": "Data successfully updated",
+                "message": "Data successfully updated.",
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
 
@@ -145,7 +147,7 @@ class GetUserByIdView(APIView):
         
         serializer = UserSerializer(user)
         return Response({
-           "message": "User details retrieved successfully",
+           "message": "User details retrieved successfully.",
            "data": serializer.data}, status=status.HTTP_200_OK)
 
      
@@ -177,7 +179,8 @@ class BookListView(generics.ListAPIView):
    def get(self, request, *args, **kwargs):
       # Gunakan self.filter_queryset untuk mempertahankan fitur filter, search, dan ordering
       queryset = self.filter_queryset(self.get_queryset())
-      serializer = self.get_serializer(queryset, many=True)
+      # terapkan pagination
+      page = self.paginate_queryset(queryset) 
 
       # Cek apakah data kosong
       if not queryset.exists():
@@ -185,10 +188,18 @@ class BookListView(generics.ListAPIView):
                "message": "No books found or Please add some books.",
                "data": []
          }, status=status.HTTP_200_OK)
+         
+      if page is not None:  # Paginated response
+               serializer = self.get_serializer(page, many=True)
+               return self.get_paginated_response({
+                  "message": "Book retrieved successfully.",
+                  "data": serializer.data
+               })
 
-      # Kembalikan response dengan data
+      # respon jika pagination tidak ada
+      serializer = self.get_serializer(queryset, many=True)
       return Response({
-         "message": "Books retrieved successfully",
+         "message": "Books retrieved successfully.",
          "data": serializer.data
       }, status=status.HTTP_200_OK)
    
@@ -221,7 +232,7 @@ class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
    def get(self, request, *args, **kwargs):
       book = self.get_object()
       return Response({
-         "message": "Book details retrieved successfully",
+         "message": "Book details retrieved successfully.",
          "data": BookSerializer(book).data
       })
 
@@ -231,7 +242,7 @@ class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
       if serializer.is_valid():
          serializer.save()
          return Response({
-               "message": "Data successfully updated",
+               "message": "Data successfully updated.",
                "data": serializer.data
          })
       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -242,7 +253,7 @@ class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
       if serializer.is_valid():
          serializer.save()
          return Response({
-               "message": "Data successfully updated by patch",
+               "message": "Data successfully updated by patch.",
                "data": serializer.data
          })
       return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -250,7 +261,7 @@ class BookDetailView(generics.RetrieveUpdateDestroyAPIView):
    def delete(self, request, *args, **kwargs):
       book = self.get_object()
       book.delete()
-      return Response({"message": "Data successfully deleted"}, status=status.HTTP_204_NO_CONTENT)
+      return Response({"message": "Data successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
 
    
    
@@ -265,7 +276,7 @@ class BookCreateView(generics.CreateAPIView):
      if serializer.is_valid():
         serializer.save()
         return Response({
-           "message": "Book Successfully created",
+           "message": "Book Successfully created.",
            "data": serializer.data,
         }, status=status.HTTP_201_CREATED)
 
@@ -275,9 +286,11 @@ class BookCreateView(generics.CreateAPIView):
      }, status=status.HTTP_400_BAD_REQUEST)
      
 
+
 # Membuat View untuk API endpoint "Create Transaction"
 # POST:/api/transactions/
 class TransactionCreateView(generics.CreateAPIView):
+   permission_classes = [IsAuthenticated]
    serializer_class = TransactionSerializer
    queryset = Transaction.objects.all()
 
@@ -288,36 +301,78 @@ class TransactionCreateView(generics.CreateAPIView):
          
          # Buat pesan respons di sini
          return Response({
-               "message": "Transaction successfully created",
+               "message": "Transaction successfully created.",
                "data": TransactionSerializer(transaction).data
          }, status=status.HTTP_201_CREATED)
+  
+  
+         
+ # Membuat View Untuk API endpoint "Get All transaction" 
+ # GET:/api/transatcions       
+class TransactionListView(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = (
+      DjangoFilterBackend,
+      OrderingFilter
+   )
+    # Custom filter by date range
+    filterset_class = TransactionFilter
+    
+    ordering_fields = ['transaction_date', 'total_amount']
+    ordering = ['transaction_date']
+   
+    def get_queryset(self):
+        user = self.request.user
+        return Transaction.objects.filter(user=user)
+   
+    def get(self, *args, **kwargs):
+         queryset = self.filter_queryset(self.get_queryset())  # Retain filtering
+         page = self.paginate_queryset(queryset)  # Apply pagination
+
+         if not queryset.exists():
+               return Response({
+                  "message": "No Transaction found.",
+                  "data": []
+               }, status=status.HTTP_200_OK)
+
+         if page is not None:  # Paginated response
+               serializer = self.get_serializer(page, many=True)
+               return self.get_paginated_response({
+                  "message": "Transactions retrieved successfully.",
+                  "data": serializer.data
+               })
+
+         # Non-paginated response (fallback)
+         serializer = self.get_serializer(queryset, many=True)
+         return Response({
+               "message": "Transactions retrieved successfully.",
+               "data": serializer.data
+         }, status=status.HTTP_200_OK)
+   
    
  
-         
 # Membuat View untuk API endpoint "Get Transaction" 
 # GET:/api/transactions/:id
 class TransactionDetailView(generics.RetrieveAPIView):
-   serializer_class = TransactionDetailSerializer
-   queryset = Transaction.objects.all()
-   
-    # Menambahkan Response
-   def get_object(self):
-      # Ambil primary key dari URL
-      pk = self.kwargs.get('pk')
-      
-      # Cek apakah objek ada di database
-      try:
-         transaction = Transaction.objects.get(pk=pk)
-         return transaction
-      except Transaction.DoesNotExist:
-         # Jika objek tidak ditemukan, kita lempar exception dengan pesan kustom
-         raise NotFound("Transaction with the given ID was not found.")
-      
+   serializer_class = TransactionSerializer
+   permission_classes = [IsAuthenticated]
+
+   def get_queryset(self):
+      user = self.request.user
+      return Transaction.objects.filter(user=user)
+
    def get(self, request, *args, **kwargs):
-      transaction = self.get_object()
-      return Response({
-         "message": "Transaction details retrieved successfully",
-         "data": TransactionSerializer(transaction).data
-         },status=status.HTTP_200_OK)
+      try:
+            transaction = self.get_object()
+            return Response({
+               "message": "Transaction retrieved successfully.",
+               "data": self.get_serializer(transaction).data
+            }, status=status.HTTP_200_OK)
+      except Transaction.DoesNotExist:
+            return Response(
+               {"error": "Transaction not found."},
+               status=status.HTTP_404_NOT_FOUND
+            )
 
 

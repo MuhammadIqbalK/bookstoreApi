@@ -189,6 +189,44 @@ class TransactionSerializer(ModelSerializer):
       fields = ['id','transaction_date', 'total_amount', 'user', 'items']
       read_only_fields = ['id', 'transaction_date', 'total_amount']
      
+  # Validasi apakah ID user valid.   
+   def validate_user(self, value):
+        if not User.objects.filter(pk=value.id).exists():
+            raise serializers.ValidationError(f"Invalid user ID '{value.id}'. User does not exist.")
+        return value
+
+ # Validasi apakah ID book valid dan quantity tidak bernilai 0 atau kurang.
+   def validate_items(self, value):
+        invalid_books = []
+        invalid_quantities = []
+        
+        for index, item in enumerate(value):
+            book_id = item.get('book')
+            quantity = item.get('quantity', 0)
+            
+            # Validasi ID buku
+            if not Book.objects.filter(pk=book_id).exists():
+                invalid_books.append(
+                    {"index": index, "book_id": book_id, "error": f"Book with ID '{book_id}' does not exist."}
+                )
+            
+            # Validasi quantity
+            if quantity <= 0:
+                invalid_quantities.append(
+                    {"index": index, "quantity": quantity, "error": "Quantity must be greater than 0."}
+                )
+        
+        errors = {}
+        if invalid_books:
+            errors["invalid_books"] = invalid_books
+        if invalid_quantities:
+            errors["invalid_quantities"] = invalid_quantities
+        
+        if errors:
+            raise serializers.ValidationError(errors)
+        
+        return value
+     
    #menjaga transaksi agar bersifat atomic (berhasil atau gagal secara keseluruhan)  
    @transaction.atomic
    def create(self, validated_data):
