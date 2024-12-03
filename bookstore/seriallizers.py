@@ -8,10 +8,11 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-
-
+# impor custom exeption khusus untuk menangani pesan error PrimaryKeyRelatedField
+from .customexeption import CustomPrimaryKeyRelatedField
 # import Book model
 from .models import User, Book, Transaction, TransactionItem, User
+
 
 
 # Membuat class serializer untuk TokenObtainPairSerializer(login menggunakan jwt)
@@ -159,73 +160,31 @@ class BookSerializer(ModelSerializer):
    class Meta:
       model = Book
       fields = ('id', 'title', 'author', 'price', 'stock')
-
+      
+              
 
 # Membuat class Serializers untuk transactionItem
 class TransactionItemSerializer(ModelSerializer):
+   book = CustomPrimaryKeyRelatedField(queryset=Book.objects.all(),
+                                       resource_name="Book")
+    
    class Meta:
       model = TransactionItem
       fields = ['book', 'quantity', 'price_total']
       # jika read_only_fields artinya tidak akan keluar di body request
       read_only_fields = ['price_total'] 
- 
-# Membuat class Serializers untuk Api endpoint "get:/Transaction/:id"   
-class TransactionDetailSerializer(ModelSerializer):
-   user_email = serializers.CharField(source='user.email', read_only=True)
-   items = TransactionItemSerializer(many=True)
-   
-   class Meta:
-      model = Transaction
-      fields = ('id', 'transaction_date', 'total_amount', 'user_email', 'items' )
-
+      
 
 # Membuat class serializer untuk Api endpoint "Post:/Transaction"
 class TransactionSerializer(ModelSerializer):
-   user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+   user = CustomPrimaryKeyRelatedField(queryset=User.objects.all(),
+                                       resource_name="User")
    items = TransactionItemSerializer(many=True)
    
    class Meta:
       model = Transaction
       fields = ['id','transaction_date', 'total_amount', 'user', 'items']
       read_only_fields = ['id', 'transaction_date', 'total_amount']
-     
-  # Validasi apakah ID user valid.   
-   def validate_user(self, value):
-        if not User.objects.filter(pk=value.id).exists():
-            raise serializers.ValidationError(f"Invalid user ID '{value.id}'. User does not exist.")
-        return value
-
- # Validasi apakah ID book valid dan quantity tidak bernilai 0 atau kurang.
-   def validate_items(self, value):
-        invalid_books = []
-        invalid_quantities = []
-        
-        for index, item in enumerate(value):
-            book_id = item.get('book')
-            quantity = item.get('quantity', 0)
-            
-            # Validasi ID buku
-            if not Book.objects.filter(pk=book_id).exists():
-                invalid_books.append(
-                    {"index": index, "book_id": book_id, "error": f"Book with ID '{book_id}' does not exist."}
-                )
-            
-            # Validasi quantity
-            if quantity <= 0:
-                invalid_quantities.append(
-                    {"index": index, "quantity": quantity, "error": "Quantity must be greater than 0."}
-                )
-        
-        errors = {}
-        if invalid_books:
-            errors["invalid_books"] = invalid_books
-        if invalid_quantities:
-            errors["invalid_quantities"] = invalid_quantities
-        
-        if errors:
-            raise serializers.ValidationError(errors)
-        
-        return value
      
    #menjaga transaksi agar bersifat atomic (berhasil atau gagal secara keseluruhan)  
    @transaction.atomic
@@ -245,7 +204,10 @@ class TransactionSerializer(ModelSerializer):
          
          # validasi untuk mengecek ketersediaan stock book
          if book.stock < quantity:
-            raise serializers.ValidationError(f"Not enough stock for {book.title}")
+            raise serializers.ValidationError(f"Not enough stock for {book.title}.")
+        
+         if quantity <= 0:
+            raise serializers.ValidationError(f"Quantity must be greater than 0 for '{book.title}'.")
 
          # kalkulasi total harga atau total_amount
          price_total = book.price * quantity
@@ -266,6 +228,14 @@ class TransactionSerializer(ModelSerializer):
    
    
    
+   # Membuat class Serializers untuk Api endpoint "get:/Transaction/:id"   
+class TransactionDetailSerializer(ModelSerializer):
+   user = serializers.CharField(source='user.email', read_only=True)
+   items = TransactionItemSerializer(many=True)
+   
+   class Meta:
+      model = Transaction
+      fields = ('id', 'transaction_date', 'total_amount', 'user', 'items' )
       
       
 

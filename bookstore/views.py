@@ -310,7 +310,7 @@ class TransactionCreateView(generics.CreateAPIView):
  # Membuat View Untuk API endpoint "Get All transaction" 
  # GET:/api/transatcions       
 class TransactionListView(generics.ListAPIView):
-    serializer_class = TransactionSerializer
+    serializer_class = TransactionDetailSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = (
       DjangoFilterBackend,
@@ -355,7 +355,7 @@ class TransactionListView(generics.ListAPIView):
 # Membuat View untuk API endpoint "Get Transaction" 
 # GET:/api/transactions/:id
 class TransactionDetailView(generics.RetrieveAPIView):
-   serializer_class = TransactionSerializer
+   serializer_class = TransactionDetailSerializer
    permission_classes = [IsAuthenticated]
 
    def get_queryset(self):
