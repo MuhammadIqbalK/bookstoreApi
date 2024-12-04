@@ -376,3 +376,30 @@ class TransactionDetailView(generics.RetrieveAPIView):
             )
 
 
+class TransactionUpdateView(generics.UpdateAPIView):
+      serializer_class = TransactionDetailSerializer
+      permission_classes = [IsAuthenticated]
+      
+      def get_queryset(self):
+         user = self.request.user
+         return Transaction.objects.filter(user=user)
+
+      def update(self, request, *args, **kwargs):
+         # Ambil transaksi berdasarkan ID
+         transaction = self.get_object()
+
+         # Validasi status yang diizinkan
+         new_status = request.data.get('status')
+         if new_status not in ['Canceled', 'Completed']:
+               return Response({"error": "Invalid status. Only 'Canceled' or 'Completed' are allowed."},
+                              status=status.HTTP_400_BAD_REQUEST)
+
+         # Jika status valid, lanjutkan dengan pembaruan status
+         serializer = self.get_serializer(transaction, data=request.data, partial=True)
+         if serializer.is_valid():
+               # Simpan perubahan ke database
+               serializer.save()
+               return Response({"message": "Transaction Status Updated successfully.",
+                                 "data": serializer.data}, status=status.HTTP_200_OK)
+
+         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

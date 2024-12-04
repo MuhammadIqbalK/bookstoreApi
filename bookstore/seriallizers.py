@@ -183,8 +183,9 @@ class TransactionSerializer(ModelSerializer):
    
    class Meta:
       model = Transaction
-      fields = ['id','transaction_date', 'total_amount', 'user', 'items']
-      read_only_fields = ['id', 'transaction_date', 'total_amount']
+      fields = ['id','transaction_date', 'total_amount', 'user', 'items', 
+                'due_date', 'status', 'payment_date']
+      read_only_fields = ['id', 'transaction_date', 'total_amount', 'due_date', 'status', 'payment_date']
      
    #menjaga transaksi agar bersifat atomic (berhasil atau gagal secara keseluruhan)  
    @transaction.atomic
@@ -235,10 +236,28 @@ class TransactionDetailSerializer(ModelSerializer):
    
    class Meta:
       model = Transaction
-      fields = ('id', 'transaction_date', 'total_amount', 'user', 'items' )
+      fields = ('id','transaction_date', 'total_amount', 'user', 'items', 
+                'due_date', 'status', 'payment_date')
+      read_only_fields = ('id','transaction_date', 'total_amount', 'user', 'items', 
+                'due_date', 'payment_date')
       
-      
+      # Custom validator untuk memastikan hanya 'canceled' atau 'completed' yang diperbolehkan.
+   def validate_status(self, value):
+        if value not in ['Canceled', 'Completed']:
+            raise serializers.ValidationError("Invalid status. Only 'canceled' or 'completed' are allowed.")
+        return value
+   
+    # Override update method untuk menambahkan logika pengaturan payment_date jika statusnya 'completed'.
+   def update(self, instance, validated_data):
+        status = validated_data.get('status', instance.status)
 
+        # Jika status baru adalah 'completed', set payment_date ke waktu saat ini
+        if status == 'Completed' and instance.payment_date is None:
+            instance.payment_date = timezone.now()
+
+        # Lakukan update pada field status dan lainnya
+        instance = super().update(instance, validated_data)
+        return instance
       
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 

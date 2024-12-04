@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import AbstractUser  # Menggunakan User model default
 
@@ -39,11 +41,17 @@ class Book(models.Model):
    def __str__(self):
       return self.title
    
+# function untuk mengatur default due_date yaitu date_now + 1 day 
+def get_default_date():
+    return timezone.now() + timedelta(days=1) 
    
 #MODEL UNTUK TABEL TRANSAKSI(3)
 class Transaction(models.Model):
    transaction_date = models.DateField(auto_now_add=True)
    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+   status = models.CharField(max_length=10, default="Pending")
+   due_date = models.DateTimeField(default=get_default_date)
+   payment_date = models.DateTimeField(null=True, blank=True)
    
 #SET RELASI KE TABEL CUSTOMER
    user = models.ForeignKey(User, on_delete=models.CASCADE)
