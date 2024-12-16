@@ -21,5 +21,6 @@ urlpatterns = [
     #routing untuk dashboard admin
     path('admin/', admin.site.urls),
     #routing untuk Rest API
-    path('api/v1/',include('bookstore.urls'))
+    path('api/v1/',include('bookstore.urls')),
+    path('api/v1/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
 ]

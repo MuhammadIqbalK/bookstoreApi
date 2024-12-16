@@ -8,4 +8,5 @@ class BookstoreConfig(AppConfig):
     def ready(self):
             # Memulai scheduler saat aplikasi dijalankan
             from .scheduler import start_scheduler
+            import bookstore.signals
             start_scheduler()

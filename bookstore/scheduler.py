@@ -28,8 +28,6 @@ def start_scheduler():
     def job_listener(event):
         if event.exception:
             print(f'Tasks failed executed: {event.job_id}')
-        else:
-            print(f'Tasks succesfully executed: {event.job_id}')
 
     # Menambahkan listener untuk mendengarkan event
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)

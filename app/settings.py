@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from datetime import timedelta
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -39,6 +40,8 @@ INSTALLED_APPS = [
     # package untuk JWT
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    # package reset password
+    'django_rest_passwordreset',
     # nama aplikasi
     'bookstore.apps.BookstoreConfig',
     'django.contrib.admin',
@@ -64,7 +67,9 @@ ROOT_URLCONF = 'app.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates',
+                 BASE_DIR / 'bookstore/templates',
+                 ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -168,3 +173,12 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',                            # ID field yang digunakan untuk mengambil informasi pengguna
     'USER_ID_CLAIM': 'user_id',                      # Klaim yang akan digunakan untuk menampilkan ID pengguna
 }
+
+# Email setting configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_PORT = 2525
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'a98da65b27c258'  # Email Anda
+EMAIL_HOST_PASSWORD = '56daef68e5e3b0'  # Password Email Anda
